@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Insta Scheduler</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main>
+    <h1>Agendar publicação no Instagram</h1>
+
+    <form id="schedule-form">
+      <label>
+        Senha
+        <input type="password" id="password" required />
+      </label>
+
+      <label>
+        Vídeo
+        <input type="file" id="video" accept="video/*" required />
+      </label>
+
+      <video id="preview" controls hidden></video>
+
+      <label>
+        Conta do Instagram
+        <select id="account" required>
+          <option value="">Carregando contas…</option>
+        </select>
+      </label>
+
+      <label>
+        Data de publicação
+        <input type="date" id="date" required />
+      </label>
+
+      <label>
+        Tema/contexto (opcional, ajuda a IA a escrever a legenda)
+        <input type="text" id="hint" placeholder="ex: bike amarela, lançamento" />
+      </label>
+
+      <button type="button" id="generate-caption">Gerar legenda</button>
+
+      <label>
+        Legenda
+        <textarea id="caption" rows="5"></textarea>
+      </label>
+
+      <p id="form-errors" role="alert"></p>
+      <button type="submit">Agendar publicação</button>
+      <p id="form-status"></p>
+    </form>
+
+    <section>
+      <h2>Fila</h2>
+      <ul id="queue-list"></ul>
+    </section>
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
