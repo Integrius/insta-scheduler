@@ -7,6 +7,7 @@ export interface GitHubConfig {
 
 const GITHUB_API = 'https://api.github.com';
 const MEDIA_RELEASE_TAG = 'media';
+const USER_AGENT = 'insta-scheduler-worker';
 
 function base64EncodeUtf8(text: string): string {
   const bytes = new TextEncoder().encode(text);
@@ -32,6 +33,7 @@ async function getOrCreateMediaRelease(config: GitHubConfig): Promise<ReleaseInf
   const headers = {
     Authorization: `Bearer ${token}`,
     Accept: 'application/vnd.github+json',
+    'User-Agent': USER_AGENT,
   };
 
   const existing = await fetchImpl(
@@ -74,6 +76,7 @@ export async function uploadVideoAsset(
       Authorization: `Bearer ${token}`,
       Accept: 'application/vnd.github+json',
       'Content-Type': contentType,
+      'User-Agent': USER_AGENT,
     },
     body: fileBytes,
   });
@@ -93,7 +96,7 @@ export async function readQueueFile(
   const { token, owner, repo, fetchImpl = fetch } = config;
 
   const res = await fetchImpl(`${GITHUB_API}/repos/${owner}/${repo}/contents/${path}`, {
-    headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' },
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'User-Agent': USER_AGENT },
   });
 
   if (res.status === 404) {
@@ -124,6 +127,7 @@ export async function writeQueueFile(
       Authorization: `Bearer ${token}`,
       Accept: 'application/vnd.github+json',
       'Content-Type': 'application/json',
+      'User-Agent': USER_AGENT,
     },
     body: JSON.stringify({ message, content: encoded, sha: sha ?? undefined }),
   });

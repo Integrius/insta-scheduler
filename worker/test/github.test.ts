@@ -32,6 +32,12 @@ describe('uploadVideoAsset', () => {
     const [uploadUrl, uploadOptions] = fetchImpl.mock.calls[1];
     expect(uploadUrl).toBe('https://uploads.github.com/repos/hans/insta-scheduler/releases/1/assets?name=video.mp4');
     expect(uploadOptions.headers['Content-Type']).toBe('video/mp4');
+
+    // GitHub's REST API rejects requests with no User-Agent header (403
+    // "Request forbidden by administrative rules") — every call must set one.
+    const [, getReleaseOptions] = fetchImpl.mock.calls[0];
+    expect(getReleaseOptions.headers['User-Agent']).toBeTruthy();
+    expect(uploadOptions.headers['User-Agent']).toBeTruthy();
   });
 
   it('creates the "media" release first when it does not exist yet', async () => {
