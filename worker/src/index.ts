@@ -6,6 +6,8 @@ import { generateCaption } from './caption';
 import { listInstagramAccounts } from './zernioAccounts';
 
 const QUEUE_PATH = 'queue.json';
+const MAX_VIDEO_BYTES = 50 * 1024 * 1024; // 50MB
+const DATE_FORMAT = /^\d{4}-\d{2}-\d{2}$/;
 
 function jsonResponse(body: unknown, status = 200): Response {
   const response = new Response(JSON.stringify(body), {
@@ -54,6 +56,12 @@ async function handleSchedule(request: Request, env: Env): Promise<Response> {
   if (!(video instanceof File) || typeof accountId !== 'string' || typeof date !== 'string' || typeof caption !== 'string') {
     return jsonResponse({ error: 'missing_fields' }, 400);
   }
+  if (!DATE_FORMAT.test(date)) {
+    return jsonResponse({ error: 'invalid_date_format' }, 400);
+  }
+  if (video.size > MAX_VIDEO_BYTES) {
+    return jsonResponse({ error: 'Video too large (max 50MB)' }, 400);
+  }
 
   const githubConfig = githubConfigFor(env);
   const fileBytes = await video.arrayBuffer();
@@ -98,7 +106,8 @@ export default {
       }
       return jsonResponse({ error: 'not_found' }, 404);
     } catch (err) {
-      return jsonResponse({ error: (err as Error).message }, 500);
+      console.error(err);
+      return jsonResponse({ error: 'internal_error' }, 500);
     }
   },
 };

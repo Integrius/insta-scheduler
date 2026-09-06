@@ -104,4 +104,54 @@ describe('worker fetch handler', () => {
     const res = await worker.fetch(request, env as any);
     expect(res.status).toBe(404);
   });
+
+  it('rejects /schedule with a malformed date', async () => {
+    const form = new FormData();
+    form.set('password', 'secret');
+    form.set('account_id', 'acc-1');
+    form.set('date', '10/09/2026');
+    form.set('caption', 'Hello world');
+    form.set('video', new File(['fake-bytes'], 'video.mp4', { type: 'video/mp4' }));
+
+    const request = new Request('https://worker.example/schedule', { method: 'POST', body: form });
+    const res = await worker.fetch(request, env as any);
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: 'invalid_date_format' });
+    expect(uploadVideoAsset).not.toHaveBeenCalled();
+  });
+
+  it('rejects /schedule with a video over the 50MB size limit', async () => {
+    const bigFile = new File([new Uint8Array(50 * 1024 * 1024 + 1)], 'video.mp4', { type: 'video/mp4' });
+
+    const form = new FormData();
+    form.set('password', 'secret');
+    form.set('account_id', 'acc-1');
+    form.set('date', '2026-09-10');
+    form.set('caption', 'Hello world');
+    form.set('video', bigFile);
+
+    const request = new Request('https://worker.example/schedule', { method: 'POST', body: form });
+    const res = await worker.fetch(request, env as any);
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: 'Video too large (max 50MB)' });
+    expect(uploadVideoAsset).not.toHaveBeenCalled();
+  });
+
+  it('returns a generic error message and does not leak internal error details on unexpected failures', async () => {
+    (listInstagramAccounts as any).mockRejectedValue(new Error('secret internal detail: owner/repo token xyz'));
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const request = new Request('https://worker.example/accounts', {
+      headers: { 'x-app-password': 'secret' },
+    });
+    const res = await worker.fetch(request, env as any);
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: 'internal_error' });
+    expect(consoleErrorSpy).toHaveBeenCalled();
+
+    consoleErrorSpy.mockRestore();
+  });
 });
