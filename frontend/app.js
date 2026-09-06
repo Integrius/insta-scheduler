@@ -1,6 +1,8 @@
 import { validateScheduleForm } from './formValidation.js';
 
 const WORKER_URL = 'https://insta-scheduler.YOUR_SUBDOMAIN.workers.dev';
+const GITHUB_OWNER = 'YOUR_GITHUB_USERNAME';
+const GITHUB_REPO = 'insta-scheduler';
 
 const form = document.getElementById('schedule-form');
 const passwordInput = document.getElementById('password');
@@ -41,22 +43,37 @@ videoInput.addEventListener('change', () => {
   }
 });
 
+const CAPTURE_FRAME_TIMEOUT_MS = 5000;
+
 function captureFrameAsBase64() {
   return new Promise((resolve, reject) => {
     if (preview.readyState < 1) {
       reject(new Error('Aguarde o vídeo carregar antes de gerar a legenda.'));
       return;
     }
+    let settled = false;
+    const cleanup = () => {
+      preview.removeEventListener('seeked', handleSeeked);
+      clearTimeout(timeoutId);
+    };
     const handleSeeked = () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
       const canvas = document.createElement('canvas');
       canvas.width = preview.videoWidth;
       canvas.height = preview.videoHeight;
       const ctx = canvas.getContext('2d');
       ctx.drawImage(preview, 0, 0, canvas.width, canvas.height);
       const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-      preview.removeEventListener('seeked', handleSeeked);
       resolve(dataUrl.split(',')[1]);
     };
+    const timeoutId = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(new Error('Tempo esgotado ao capturar o quadro do vídeo. Tente novamente.'));
+    }, CAPTURE_FRAME_TIMEOUT_MS);
     preview.addEventListener('seeked', handleSeeked);
     preview.currentTime = Math.min(preview.duration * 0.4, preview.duration - 0.1);
   });
@@ -139,7 +156,10 @@ form.addEventListener('submit', async event => {
 
 async function loadQueue() {
   try {
-    const res = await fetch('../queue.json', { cache: 'no-store' });
+    const res = await fetch(
+      `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/main/queue.json`,
+      { cache: 'no-store' }
+    );
     const queue = await res.json();
     queueList.innerHTML = queue
       .map(entry => `<li>${entry.date} — ${entry.status} — ${entry.caption.slice(0, 60)}</li>`)
