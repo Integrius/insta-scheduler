@@ -1,7 +1,7 @@
 import { validateScheduleForm } from './formValidation.js';
 
-const WORKER_URL = 'https://insta-scheduler.YOUR_SUBDOMAIN.workers.dev';
-const GITHUB_OWNER = 'YOUR_GITHUB_USERNAME';
+const WORKER_URL = 'https://insta-scheduler.eu-hansclaudio.workers.dev';
+const GITHUB_OWNER = 'Integrius';
 const GITHUB_REPO = 'insta-scheduler';
 
 const form = document.getElementById('schedule-form');
