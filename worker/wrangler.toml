@@ -3,5 +3,5 @@ main = "src/index.ts"
 compatibility_date = "2026-09-06"
 
 [vars]
-GITHUB_OWNER = "REPLACE_WITH_YOUR_GITHUB_USERNAME"
+GITHUB_OWNER = "Integrius"
 GITHUB_REPO = "insta-scheduler"
