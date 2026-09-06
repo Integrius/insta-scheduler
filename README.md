@@ -20,9 +20,17 @@ desenho completo. Resumo:
 ### 1. Criar o repositório no GitHub
 
 ```bash
-gh repo create insta-scheduler --private --source=. --remote=origin
-git push -u origin master
+gh repo create insta-scheduler --public --source=. --remote=origin
+git branch -M main
+git push -u origin main
 ```
+
+> **O repositório precisa ser público** — a Zernio busca a URL do vídeo
+> publicamente (sem autenticação) para publicar no Instagram; um
+> repositório privado faria toda publicação falhar. Isso também significa
+> que os vídeos agendados ficam publicamente baixáveis pela URL da Release
+> até serem publicados (aceitável para uso pessoal, mas vale deixar
+> explícito).
 
 ### 2. Gerar as chaves necessárias
 
@@ -63,7 +71,10 @@ Anote a URL que a Cloudflare devolver (algo como
 ### 5. Apontar o frontend para a Worker
 
 Edite `frontend/app.js` e troque `WORKER_URL` pela URL do passo anterior.
-Faça commit e push — o workflow `pages-deploy.yml` publica automaticamente.
+Troque também `GITHUB_OWNER` e `GITHUB_REPO` (usados para ler `queue.json`
+diretamente do `raw.githubusercontent.com`, já que o GitHub Pages serve
+`frontend/` como raiz do site). Faça commit e push — o workflow
+`pages-deploy.yml` publica automaticamente.
 
 ### 6. Ativar o GitHub Pages
 
