@@ -8,6 +8,20 @@ export interface GitHubConfig {
 const GITHUB_API = 'https://api.github.com';
 const MEDIA_RELEASE_TAG = 'media';
 
+function base64EncodeUtf8(text: string): string {
+  const bytes = new TextEncoder().encode(text);
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
+function base64DecodeUtf8(base64: string): string {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
 interface ReleaseInfo {
   id: number;
   upload_url: string;
@@ -90,7 +104,7 @@ export async function readQueueFile(
   }
 
   const data = (await res.json()) as { content: string; sha: string };
-  const decoded = atob(data.content.replace(/\n/g, ''));
+  const decoded = base64DecodeUtf8(data.content.replace(/\n/g, ''));
   return { content: JSON.parse(decoded), sha: data.sha };
 }
 
@@ -102,7 +116,7 @@ export async function writeQueueFile(
   message: string
 ): Promise<void> {
   const { token, owner, repo, fetchImpl = fetch } = config;
-  const encoded = btoa(JSON.stringify(content, null, 2) + '\n');
+  const encoded = base64EncodeUtf8(JSON.stringify(content, null, 2) + '\n');
 
   const res = await fetchImpl(`${GITHUB_API}/repos/${owner}/${repo}/contents/${path}`, {
     method: 'PUT',

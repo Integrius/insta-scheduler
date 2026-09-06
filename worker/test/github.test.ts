@@ -138,4 +138,39 @@ describe('writeQueueFile', () => {
       writeQueueFile({ ...config, fetchImpl }, 'queue.json', [], 'sha-1', 'msg')
     ).rejects.toThrow('Failed to write queue.json (409): sha mismatch');
   });
+
+  it('round-trips non-ASCII captions (accents and emoji) through write then read without corruption', async () => {
+    const original = 'Coração 🚴';
+    let storedEncodedContent = '';
+
+    const writeFetchImpl = vi.fn().mockImplementation(async (_url: string, options: any) => {
+      const body = JSON.parse(options.body);
+      storedEncodedContent = body.content;
+      return { ok: true, status: 200, json: async () => ({}) };
+    });
+
+    await writeQueueFile(
+      { ...config, fetchImpl: writeFetchImpl },
+      'queue.json',
+      [{ id: 'a', caption: original }],
+      'sha-1',
+      'Schedule post'
+    );
+
+    // The write must not throw (btoa alone throws InvalidCharacterError on emoji),
+    // and the encoded content must decode back to the exact original string.
+    const decodedFromWrite = JSON.parse(
+      new TextDecoder().decode(Uint8Array.from(atob(storedEncodedContent), c => c.charCodeAt(0)))
+    );
+    expect(decodedFromWrite[0].caption).toBe(original);
+
+    const readFetchImpl = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ content: storedEncodedContent, sha: 'sha-1' }),
+    });
+
+    const result = await readQueueFile({ ...config, fetchImpl: readFetchImpl }, 'queue.json');
+    expect((result.content[0] as any).caption).toBe(original);
+  });
 });
