@@ -71,3 +71,50 @@ export async function uploadVideoAsset(
   const asset = (await res.json()) as { browser_download_url: string };
   return asset.browser_download_url;
 }
+
+export async function readQueueFile(
+  config: GitHubConfig,
+  path: string
+): Promise<{ content: unknown[]; sha: string | null }> {
+  const { token, owner, repo, fetchImpl = fetch } = config;
+
+  const res = await fetchImpl(`${GITHUB_API}/repos/${owner}/${repo}/contents/${path}`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' },
+  });
+
+  if (res.status === 404) {
+    return { content: [], sha: null };
+  }
+  if (!res.ok) {
+    throw new Error(`Failed to read ${path} (${res.status}): ${await res.text()}`);
+  }
+
+  const data = (await res.json()) as { content: string; sha: string };
+  const decoded = atob(data.content.replace(/\n/g, ''));
+  return { content: JSON.parse(decoded), sha: data.sha };
+}
+
+export async function writeQueueFile(
+  config: GitHubConfig,
+  path: string,
+  content: unknown[],
+  sha: string | null,
+  message: string
+): Promise<void> {
+  const { token, owner, repo, fetchImpl = fetch } = config;
+  const encoded = btoa(JSON.stringify(content, null, 2) + '\n');
+
+  const res = await fetchImpl(`${GITHUB_API}/repos/${owner}/${repo}/contents/${path}`, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/vnd.github+json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ message, content: encoded, sha: sha ?? undefined }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to write ${path} (${res.status}): ${await res.text()}`);
+  }
+}
